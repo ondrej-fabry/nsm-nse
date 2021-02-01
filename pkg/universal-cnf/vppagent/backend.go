@@ -48,7 +48,7 @@ func (b *UniversalCNFVPPAgentBackend) NewUniversalCNFBackend() error {
 	b.EndpointIfID = make(map[string]int)
 
 	if err := ResetVppAgent(); err != nil {
-		logrus.Fatalf("Error resetting vpp: %v", err)
+		return fmt.Errorf("resetting vpp agent failed: %w", err)
 	}
 
 	return nil
@@ -121,7 +121,7 @@ func (b *UniversalCNFVPPAgentBackend) ProcessEndpoint(
 	dpconfig interface{}, serviceName, ifName string, conn *connection.Connection) error {
 	vppconfig, ok := dpconfig.(*vpp.ConfigData)
 	if !ok {
-		return fmt.Errorf("unable to convert dpconfig to vppconfig	")
+		return fmt.Errorf("unable to convert dpconfig to vppconfig")
 	}
 
 	srcIP, _, _ := net.ParseCIDR(conn.GetContext().GetIpContext().GetSrcIpAddr())
@@ -136,7 +136,7 @@ func (b *UniversalCNFVPPAgentBackend) ProcessEndpoint(
 	endpointIfName := b.buildVppIfName(ifName, serviceName, conn)
 
 	rxModes := []*interfaces.Interface_RxMode{
-		&interfaces.Interface_RxMode{
+		{
 			Mode:        interfaces.Interface_RxMode_INTERRUPT,
 			DefaultMode: true,
 		},
@@ -159,7 +159,7 @@ func (b *UniversalCNFVPPAgentBackend) ProcessEndpoint(
 		})
 
 	if err := os.MkdirAll(path.Dir(socketFilename), os.ModePerm); err != nil {
-		return err
+		return fmt.Errorf("creating memif socket file: %w", err)
 	}
 
 	// Process static routes
@@ -238,14 +238,13 @@ func (b *UniversalCNFVPPAgentBackend) GetEndpointIfID(serviceName string) string
 func (b *UniversalCNFVPPAgentBackend) ProcessDPConfig(dpconfig interface{}, update bool) error {
 	vppconfig, ok := dpconfig.(*vpp.ConfigData)
 	if !ok {
-		return fmt.Errorf("unable to convert dpconfig to vppconfig	")
+		return fmt.Errorf("unable to convert dpconfig to vppconfig")
 	}
 
-	err := SendVppConfigToVppAgent(vppconfig, update)
-
-	if err != nil {
+	if err := SendVppConfigToVppAgent(vppconfig, update); err != nil {
 		logrus.Errorf("Updating the VPP config failed with: %v", err)
+		return err
 	}
 
-	return err
+	return nil
 }

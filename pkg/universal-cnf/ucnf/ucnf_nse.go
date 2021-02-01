@@ -12,18 +12,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-//
 type UcnfNse struct {
 	processEndpoints *config.ProcessEndpoints
 }
 
-func (ucnf *UcnfNse) Cleanup() {
-	ucnf.processEndpoints.Cleanup()
-}
-
 func NewUcnfNse(configPath string, verify bool, backend config.UniversalCNFBackend, ceAddons config.CompositeEndpointAddons, ctx context.Context) *UcnfNse {
-
 	cnfConfig := &nseconfig.Config{}
+
 	f, err := os.Open(configPath)
 	if err != nil {
 		logrus.Fatal(err)
@@ -52,16 +47,22 @@ func NewUcnfNse(configPath string, verify bool, backend config.UniversalCNFBacke
 
 	configuration := common.FromEnv()
 
+	logrus.Debugf("configuration: %+v", configuration)
+
 	pe := config.NewProcessEndpoints(backend, cnfConfig.Endpoints, configuration, ceAddons, ctx)
 
 	ucnfnse := &UcnfNse{
 		processEndpoints: pe,
 	}
 
-	logrus.Infof("Starting endpoints")
+	logrus.Infof("Starting %d endpoints", len(pe.Endpoints))
 
 	if err := pe.Process(); err != nil {
 		logrus.Fatalf("Error processing the new endpoints: %v", err)
 	}
 	return ucnfnse
+}
+
+func (ucnf *UcnfNse) Cleanup() {
+	ucnf.processEndpoints.Cleanup()
 }

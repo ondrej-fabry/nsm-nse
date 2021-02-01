@@ -7,7 +7,7 @@ ENV PACKAGEPATH=github.com/networkservicemesh/networkservicemesh/
 ENV GO111MODULE=on
 
 RUN mkdir /root/networkservicemesh
-ADD ["go.mod","/root/networkservicemesh"]
+COPY go.mod /root/networkservicemesh
 WORKDIR /root/networkservicemesh/
 RUN go mod download
 
@@ -15,9 +15,12 @@ ADD [".","/root/networkservicemesh"]
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-extldflags "-static"' -o /go/bin/cnf-vppagent ./cmd/universal-cnf-vpp/...
 
 FROM ${VPP_AGENT} as runtime
+
 COPY --from=build /go/bin/cnf-vppagent /bin/cnf-vppagent
+
 COPY ./build/nse/universal-cnf/vppagent/etc/ /etc/
 COPY ./build/nse/universal-cnf/vppagent/etc/supervisord/supervisord.conf /opt/vpp-agent/dev/supervisor.conf
+
 RUN set -ex; \
     rm /opt/vpp-agent/dev/etcd.conf; \
     echo 'endpoint: "localhost:9113"' > /opt/vpp-agent/dev/grpc.conf ; \

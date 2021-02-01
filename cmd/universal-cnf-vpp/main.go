@@ -31,8 +31,7 @@ import (
 )
 
 const (
-	defaultConfigPath   = "/etc/universal-cnf/config.yaml"
-	defaultPluginModule = ""
+	defaultConfigPath = "/etc/universal-cnf/config.yaml"
 )
 
 // Flags holds the command line flags as supplied with the binary invocation

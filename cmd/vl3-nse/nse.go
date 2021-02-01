@@ -51,8 +51,6 @@ type Flags struct {
 	Verify     bool
 }
 
-type fnGetNseName func() string
-
 // Process will parse the command line flags and init the structure members
 func (mf *Flags) Process() {
 	flag.StringVar(&mf.ConfigPath, "file", defaultConfigPath, " full path to the configuration file")
@@ -89,7 +87,7 @@ func (e vL3CompositeEndpoint) AddCompositeEndpoints(nsConfig *common.NSConfigura
 
 func main() {
 	// Capture signals to cleanup before exiting
-	logrus.Info("starting endpoint")
+	logrus.Info("STARTING ENDPOINT")
 	c := tools.NewOSSignalChannel()
 
 	logrus.SetOutput(os.Stdout)
@@ -122,38 +120,3 @@ func InitializeMetrics() {
 	logrus.WithField("path", metricsPath).Infof("Serving metrics on: %v", addr)
 	metrics.ServeMetrics(addr, metricsPath)
 }
-
-/*
-var (
-	nsmEndpoint *endpoint.NsmEndpoint
-)
-
-func main() {
-
-	// Capture signals to cleanup before exiting
-	c := tools.NewOSSignalChannel()
-
-	composite := endpoint.NewCompositeEndpoint(
-		endpoint.NewMonitorEndpoint(nil),
-		endpoint.NewIpamEndpoint(nil),
-		newVL3ConnectComposite(nil),
-		endpoint.NewConnectionEndpoint(nil))
-
-	nsme, err := endpoint.NewNSMEndpoint(context.TODO(), nil, composite)
-	if err != nil {
-		logrus.Fatalf("%v", err)
-	}
-	nsmEndpoint = nsme
-	_ = nsmEndpoint.Start()
-	logrus.Infof("Started NSE --got name %s", nsmEndpoint.GetName())
-	defer func() { _ = nsmEndpoint.Delete() }()
-
-	// Capture signals to cleanup before exiting
-	<-c
-}
-
-func GetMyNseName() string {
-	return nsmEndpoint.GetName()
-}
-
-*/
