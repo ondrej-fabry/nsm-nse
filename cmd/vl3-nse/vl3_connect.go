@@ -307,7 +307,7 @@ func (vxc *vL3ConnectComposite) processNsEndpoints(ctx context.Context, response
 	// just create a new logger for this go thread
 	logger := logrus.New()
 
-	logrus.Debugf("***** processNsEndpoints (remoteIp:%v): %+v *****", remoteIp, response.GetNetworkServiceEndpoints())
+	logrus.Debugf("***** processNsEndpoints ***** (remoteIp:%v): %+v", remoteIp, response.GetNetworkServiceEndpoints())
 	defer logrus.Debugf("--- processNsEndpoints done ---")
 
 	for _, vl3endpoint := range response.GetNetworkServiceEndpoints() {

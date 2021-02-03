@@ -94,6 +94,7 @@ func main() {
 
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetReportCaller(true)
 
 	mainFlags := &Flags{}
 	mainFlags.Process()
