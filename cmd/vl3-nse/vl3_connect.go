@@ -307,6 +307,9 @@ func (vxc *vL3ConnectComposite) processNsEndpoints(ctx context.Context, response
 	// just create a new logger for this go thread
 	logger := logrus.New()
 
+	logrus.Debugf("***** processNsEndpoints (remoteIp:%v): %+v *****", remoteIp, response.GetNetworkServiceEndpoints())
+	defer logrus.Debugf("--- processNsEndpoints done ---")
+
 	for _, vl3endpoint := range response.GetNetworkServiceEndpoints() {
 		if vl3endpoint.GetName() != vxc.GetMyNseName() {
 			logger.Infof("Found vL3 service %s peer %s", vl3endpoint.NetworkServiceName, vl3endpoint.GetName())

@@ -20,6 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/networkservicemesh/networkservicemesh/controlplane/api/networkservice"
@@ -119,4 +121,18 @@ func InitializeMetrics() {
 	addr := fmt.Sprintf("0.0.0.0:%v", metricsPort)
 	logrus.WithField("path", metricsPath).Infof("Serving metrics on: %v", addr)
 	metrics.ServeMetrics(addr, metricsPath)
+}
+
+func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		EnvironmentOverrideColors: true,
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			const modulePath = "github.com/cisco-app-networking/nsm-nse"
+			call := strings.TrimPrefix(frame.Function, modulePath)
+			function = fmt.Sprintf("%s()", strings.TrimPrefix(call, "/"))
+			_, file = filepath.Split(frame.File)
+			file = fmt.Sprintf("%s:%d", file, frame.Line)
+			return
+		},
+	})
 }

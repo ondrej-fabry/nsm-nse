@@ -18,6 +18,8 @@ package config
 import (
 	"context"
 	"fmt"
+	"net"
+
 	"github.com/cisco-app-networking/nsm-nse/pkg/nseconfig"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/networkservicemesh/networkservicemesh/controlplane/api/connection"
@@ -27,7 +29,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.ligato.io/vpp-agent/v3/proto/ligato/vpp"
 	l3 "go.ligato.io/vpp-agent/v3/proto/ligato/vpp/l3"
-	"net"
 )
 
 // UniversalCNFEndpoint is a Universal CNF Endpoint composite implementation
@@ -141,7 +142,7 @@ func (uce *UniversalCNFEndpoint) Close(ctx context.Context, connection *connecti
 
 	// Remove the interfaces from the vpp agent
 	if err := uce.backend.ProcessDPConfig(removeConfig, false); err != nil {
-		logrus.Errorf("Error processing dpconfig: %+v", uce.dpConfig)
+		logrus.Errorf("ProcessDPConfig failed: %+v", uce.dpConfig)
 		return nil, err
 	}
 

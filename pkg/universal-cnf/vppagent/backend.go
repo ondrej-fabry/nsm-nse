@@ -135,6 +135,14 @@ func (b *UniversalCNFVPPAgentBackend) ProcessEndpoint(
 
 	endpointIfName := b.buildVppIfName(ifName, serviceName, conn)
 
+	logrus.WithFields(map[string]interface{}{
+		"serviceName":    serviceName,
+		"ifName":         ifName,
+		"srcIP":          srcIP,
+		"dstIP":          dstIP,
+		"endpointIfName": endpointIfName,
+	}).Debugf("ProcessEndpoint - conn: %+v", conn)
+
 	rxModes := []*interfaces.Interface_RxMode{
 		{
 			Mode:        interfaces.Interface_RxMode_INTERRUPT,
