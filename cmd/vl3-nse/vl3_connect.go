@@ -167,6 +167,7 @@ func (vxc *vL3ConnectComposite) processPeerRequest(vl3SrcEndpointName string, re
 func (vxc *vL3ConnectComposite) Request(ctx context.Context,
 	request *networkservice.NetworkServiceRequest) (*connection.Connection, error) {
 	logger := logrus.New() // endpoint.Log(ctx)
+	logger.SetReportCaller(logrus.StandardLogger().ReportCaller)
 
 	conn := request.GetConnection()
 	logger.WithFields(logrus.Fields{
@@ -306,6 +307,7 @@ func (vxc *vL3ConnectComposite) processNsEndpoints(ctx context.Context, response
 	*/
 	// just create a new logger for this go thread
 	logger := logrus.New()
+	logger.SetReportCaller(logrus.StandardLogger().ReportCaller)
 
 	logrus.Debugf("***** processNsEndpoints ***** (remoteIp:%v): %+v", remoteIp, response.GetNetworkServiceEndpoints())
 	defer logrus.Debugf("--- processNsEndpoints done ---")
