@@ -2,6 +2,7 @@ package ucnf
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 
 	"github.com/cisco-app-networking/nsm-nse/pkg/nseconfig"
@@ -47,7 +48,10 @@ func NewUcnfNse(configPath string, verify bool, backend config.UniversalCNFBacke
 
 	configuration := common.FromEnv()
 
-	logrus.Debugf("configuration: %+v", configuration)
+	b, _ := json.MarshalIndent(cnfConfig, "", "  ")
+	logrus.Debugf("cnfConfig: %s", b)
+	b, _ = json.MarshalIndent(configuration, "", "  ")
+	logrus.Debugf("configuration: %s", b)
 
 	pe := config.NewProcessEndpoints(backend, cnfConfig.Endpoints, configuration, ceAddons, ctx)
 

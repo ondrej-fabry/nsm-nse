@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/networkservicemesh/networkservicemesh/controlplane/api/connection"
@@ -103,6 +104,11 @@ func (vxc *vL3ConnectComposite) getPeer(endpointName string) *vL3NsePeer {
 func (vxc *vL3ConnectComposite) addPeer(endpointName, networkServiceManagerName, remoteIp string) *vL3NsePeer {
 	vxc.Lock()
 	defer vxc.Unlock()
+	logrus.WithFields(map[string]interface{}{
+		"endpointName":              endpointName,
+		"networkServiceManagerName": networkServiceManagerName,
+		"remoteIp":                  remoteIp,
+	}).Tracef("# addPeer")
 	_, ok := vxc.vl3NsePeers[endpointName]
 	if !ok {
 		vxc.vl3NsePeers[endpointName] = &vL3NsePeer{
@@ -309,12 +315,16 @@ func (vxc *vL3ConnectComposite) processNsEndpoints(ctx context.Context, response
 	logger := logrus.New()
 	logger.SetReportCaller(logrus.StandardLogger().ReportCaller)
 
-	logrus.Debugf("***** processNsEndpoints ***** (remoteIp:%v): %+v", remoteIp, response.GetNetworkServiceEndpoints())
-	defer logrus.Debugf("--- processNsEndpoints done ---")
+	logrus.WithFields(map[string]interface{}{
+		"MyNseName": vxc.GetMyNseName(),
+	}).Debugf("************************* processNsEndpoints ************************* (remoteIp:%v): %d endpoints", remoteIp, len(response.GetNetworkServiceEndpoints()))
+	defer func(t time.Time) {
+		logrus.Debugf("---------------- processNsEndpoints DONE (took %v seconds) ----------------", time.Since(t).Seconds())
+	}(time.Now())
 
 	for _, vl3endpoint := range response.GetNetworkServiceEndpoints() {
 		if vl3endpoint.GetName() != vxc.GetMyNseName() {
-			logger.Infof("Found vL3 service %s peer %s", vl3endpoint.NetworkServiceName, vl3endpoint.GetName())
+			logger.Infof("+++ Found vL3 service %s peer %s", vl3endpoint.NetworkServiceName, vl3endpoint.GetName())
 
 			peer := vxc.addPeer(vl3endpoint.GetName(), vl3endpoint.NetworkServiceManagerName, remoteIp)
 			//peer.excludedPrefixes = removeDuplicates(append(peer.excludedPrefixes, incoming.Context.IpContext.ExcludedPrefixes...))
@@ -342,7 +352,7 @@ func (vxc *vL3ConnectComposite) processNsEndpoints(ctx context.Context, response
 			}
 			peer.Unlock()
 		} else {
-			logger.Infof("Found my vL3 service %s instance endpoint name: %s", vl3endpoint.NetworkServiceName,
+			logger.Infof("--- Found MY vL3 service %s instance endpoint name: %s", vl3endpoint.NetworkServiceName,
 				vl3endpoint.GetName())
 		}
 	}
