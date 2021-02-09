@@ -172,14 +172,13 @@ func (vxc *vL3ConnectComposite) processPeerRequest(vl3SrcEndpointName string, re
 
 func (vxc *vL3ConnectComposite) Request(ctx context.Context,
 	request *networkservice.NetworkServiceRequest) (*connection.Connection, error) {
-	logger := logrus.New() // endpoint.Log(ctx)
-	logger.SetReportCaller(logrus.StandardLogger().ReportCaller)
+	logger := newLogger()
 
 	conn := request.GetConnection()
 	logger.WithFields(logrus.Fields{
 		"endpointName":              conn.GetNetworkServiceEndpointName(),
 		"networkServiceManagerName": conn.GetSourceNetworkServiceManagerName(),
-	}).Infof("vL3ConnectComposite Request handler")
+	}).Infof("=====> vL3ConnectComposite Request handler")
 
 	//var err error
 	/* NOTE: for IPAM we assume there's no IPAM endpoint in the composite endpoint list */
@@ -312,8 +311,7 @@ func (vxc *vL3ConnectComposite) processNsEndpoints(ctx context.Context, response
 	   - do we need to match the name portion?  labels?
 	*/
 	// just create a new logger for this go thread
-	logger := logrus.New()
-	logger.SetReportCaller(logrus.StandardLogger().ReportCaller)
+	logger := newLogger()
 
 	logrus.WithFields(map[string]interface{}{
 		"MyNseName": vxc.GetMyNseName(),

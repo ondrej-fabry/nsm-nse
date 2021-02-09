@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/networkservicemesh/networkservicemesh/controlplane/api/networkservice"
 	"github.com/networkservicemesh/networkservicemesh/pkg/tools"
@@ -136,4 +137,51 @@ func init() {
 			return
 		},
 	})
+	logrus.AddHook(silenceHook)
+	go silenceHook.silenceLoop()
+}
+
+func newLogger() *logrus.Logger {
+	logger := logrus.New()
+	logger.SetReportCaller(logrus.StandardLogger().ReportCaller)
+	logrus.AddHook(silenceHook)
+	return logger
+}
+
+var silenceHook = &SilenceHook{
+	resetChan: make(chan struct{}, 1),
+}
+
+type SilenceHook struct {
+	resetChan chan struct{}
+	//sync.Mutex
+}
+
+func (s *SilenceHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (s *SilenceHook) Fire(entry *logrus.Entry) error {
+	//s.Lock()
+	//defer s.Unlock()
+	select {
+	case s.resetChan <- struct{}{}:
+	default:
+	}
+	return nil
+}
+
+func (s *SilenceHook) silenceLoop() {
+	var t time.Timer
+	for {
+		select {
+		case <-t.C:
+			logrus.Debugf("----------------------------------------------------------------------------------")
+		case <-s.resetChan:
+			if !t.Stop() {
+				<-t.C
+			}
+			t.Reset(time.Second)
+		}
+	}
 }
