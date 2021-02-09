@@ -172,7 +172,8 @@ func (s *SilenceHook) Fire(entry *logrus.Entry) error {
 }
 
 func (s *SilenceHook) silenceLoop() {
-	var t time.Timer
+	t := time.NewTimer(0)
+	<-t.C
 	for {
 		select {
 		case <-t.C:
