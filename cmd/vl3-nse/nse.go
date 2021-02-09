@@ -172,12 +172,13 @@ func (s *SilenceHook) Fire(entry *logrus.Entry) error {
 }
 
 func (s *SilenceHook) silenceLoop() {
+	logger := logrus.New()
 	t := time.NewTimer(0)
 	<-t.C
 	for {
 		select {
 		case <-t.C:
-			logrus.Debugf("----------------------------------------------------------------------------------")
+			logger.Debugf("----------------------------------------------------------------------------------")
 		case <-s.resetChan:
 			if !t.Stop() {
 				<-t.C
