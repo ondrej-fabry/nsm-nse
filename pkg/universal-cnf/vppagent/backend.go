@@ -249,6 +249,10 @@ func (b *UniversalCNFVPPAgentBackend) ProcessDPConfig(dpconfig interface{}, upda
 		return fmt.Errorf("unable to convert dpconfig to vppconfig")
 	}
 
+	if os.Getenv("DPCONFIG_NOFAIL") == "" {
+		return fmt.Errorf("simulated failure on vpp-agent")
+	}
+
 	if err := SendVppConfigToVppAgent(vppconfig, update); err != nil {
 		logrus.Errorf("Updating the VPP config failed with: %v", err)
 		return err
