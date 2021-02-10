@@ -29,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.ligato.io/vpp-agent/v3/proto/ligato/vpp"
 	l3 "go.ligato.io/vpp-agent/v3/proto/ligato/vpp/l3"
+	"google.golang.org/protobuf/proto"
 )
 
 // UniversalCNFEndpoint is a Universal CNF Endpoint composite implementation
@@ -48,15 +49,19 @@ func (uce *UniversalCNFEndpoint) Request(ctx context.Context,
 		uce.dpConfig = uce.backend.NewDPConfig()
 	}
 
-	if err := uce.backend.ProcessEndpoint(uce.dpConfig, uce.endpoint.Name, uce.endpoint.VL3.Ifname, conn); err != nil {
+	dpConfig := proto.Clone(uce.dpConfig).(*vpp.ConfigData)
+
+	if err := uce.backend.ProcessEndpoint(dpConfig, uce.endpoint.Name, uce.endpoint.VL3.Ifname, conn); err != nil {
 		logrus.Errorf("Failed to process: %+v", uce.endpoint)
 		return nil, err
 	}
 
-	if err := uce.backend.ProcessDPConfig(uce.dpConfig, true); err != nil {
-		logrus.Errorf("Error processing dpconfig: %+v", uce.dpConfig)
+	if err := uce.backend.ProcessDPConfig(dpConfig, true); err != nil {
+		logrus.Errorf("Error processing dpconfig: %+v", dpConfig)
 		return nil, err
 	}
+
+	uce.dpConfig = dpConfig
 
 	if endpoint.Next(ctx) != nil {
 		return endpoint.Next(ctx).Request(ctx, request)
