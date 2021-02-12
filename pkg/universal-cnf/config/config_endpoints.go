@@ -119,7 +119,7 @@ func NewProcessEndpoints(backend UniversalCNFBackend, endpoints []*nseconfig.End
 			var err error
 			ipamService, err := NewIpamService(ctx, e.VL3.IPAM.ServerAddress)
 			if err != nil {
-				logrus.Warningf("Unable to connect to IPAM Service %v",err)
+				logrus.Warningf("Unable to connect to IPAM Service %v", err)
 			} else {
 				configuration.IPAddress, err = ipamService.AllocateSubnet(e)
 				if err != nil {
@@ -189,14 +189,22 @@ func (pe *ProcessEndpoints) Process() error {
 	for _, e := range pe.Endpoints {
 		nsEndpoint, err := endpoint.NewNSMEndpoint(context.TODO(), e.NSConfiguration, e.NSComposite)
 		if err != nil {
-			logrus.Fatalf("%v", err)
+			logrus.Errorf("NewNSMEndpoint error: %v", err)
 			return err
 		}
 
-		_ = nsEndpoint.Start()
+		if err := nsEndpoint.Start(); err != nil {
+			logrus.Warnf("NsmEndpoint.Start error: %v", err)
+		}
+
 		e.Endpoint.NseName = nsEndpoint.GetName()
+		e.Cleanup = func() {
+			if err := nsEndpoint.Delete(); err != nil {
+				logrus.Warnf("NsmEndpoint.Delete error: %v", err)
+			}
+		}
+
 		logrus.Infof("Started endpoint %s", nsEndpoint.GetName())
-		e.Cleanup = func() { _ = nsEndpoint.Delete() }
 	}
 
 	return nil

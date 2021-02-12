@@ -30,20 +30,24 @@ import (
 
 const (
 	defaultVPPAgentEndpoint = "localhost:9113"
+	defaultTimeout          = 120 * time.Second
+	defaultCheckInterval    = 100 * time.Millisecond
 )
 
 // ResetVppAgent resets the VPP instance settings to nil
 func ResetVppAgent() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	addr := defaultVPPAgentEndpoint
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	if err := tools.WaitForPortAvailable(ctx, "tcp", defaultVPPAgentEndpoint, 100*time.Millisecond); err != nil {
+	if err := tools.WaitForPortAvailable(ctx, "tcp", addr, defaultCheckInterval); err != nil {
 		return err
 	}
 
-	conn, err := grpc.Dial(defaultVPPAgentEndpoint, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
-		logrus.Errorf("can't dial grpc server: %v", err)
+		logrus.Errorf("can't dial grpc server %v: %v", addr, err)
 		return err
 	}
 
@@ -59,6 +63,7 @@ func ResetVppAgent() error {
 	})
 	if err != nil {
 		logrus.Errorf("failed to reset vppagent: %s", err)
+		return err
 	}
 
 	logrus.Infof("Finished resetting vppagent...")
@@ -72,11 +77,11 @@ func SendVppConfigToVppAgent(vppconfig *vpp.ConfigData, update bool) error {
 		VppConfig: vppconfig,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 
 	defer cancel()
 
-	if err := tools.WaitForPortAvailable(ctx, "tcp", defaultVPPAgentEndpoint, 100*time.Millisecond); err != nil {
+	if err := tools.WaitForPortAvailable(ctx, "tcp", defaultVPPAgentEndpoint, defaultCheckInterval); err != nil {
 		return err
 	}
 

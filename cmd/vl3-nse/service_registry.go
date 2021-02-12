@@ -27,17 +27,34 @@ const (
 type validationErrors []error
 
 func NewServiceRegistry(addr string, ctx context.Context) (ServiceRegistry, ServiceRegistryClient, error) {
-	opts := []grpc.DialOption{
+	opts := prepareDialOptions(ctx)
+
+	conn, err := grpc.Dial(addr, opts...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to connect to ServiceRegistry: %w", err)
+	}
+
+	registryClient := serviceregistry.NewRegistryClient(conn)
+	serviceRegistry := serviceRegistry{registryClient: registryClient, connection: conn}
+
+	return &serviceRegistry, &serviceRegistry, nil
+}
+
+func prepareDialOptions(ctx context.Context) []grpc.DialOption {
+	var opts []grpc.DialOption
+
+	// prometheus
+	opts = append(opts, []grpc.DialOption{
 		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
-	}
+	}...)
 
+	// security
 	insecure, err := strconv.ParseBool(os.Getenv(tools.InsecureEnv))
 	if err != nil {
-		logrus.Info("Missing INSECURE env variable. Continuing with insecure mode.")
+		logrus.Warnf("Missing INSECURE env variable. Continuing with insecure mode.")
 		insecure = true
 	}
-
 	if !insecure && tools.GetConfig().SecurityProvider != nil {
 		if tlsConfig, err := tools.GetConfig().SecurityProvider.GetTLSConfig(ctx); err != nil {
 			logrus.Errorf(
@@ -54,15 +71,7 @@ func NewServiceRegistry(addr string, ctx context.Context) (ServiceRegistry, Serv
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	conn, err := grpc.Dial(addr, opts...)
-	if err != nil {
-		return nil, nil, fmt.Errorf("unable to connect to ServiceRegistry: %w", err)
-	}
-
-	registryClient := serviceregistry.NewRegistryClient(conn)
-	serviceRegistry := serviceRegistry{registryClient: registryClient, connection: conn}
-
-	return &serviceRegistry, &serviceRegistry, nil
+	return opts
 }
 
 type ServiceRegistry interface {
@@ -109,7 +118,7 @@ func (s *serviceRegistry) RegisterWorkload(ctx context.Context, workloadLabels m
 	logrus.Infof("Sending workload register request: %v", serviceWorkload)
 	_, err = s.registryClient.RegisterWorkload(ctx, serviceWorkload)
 	if err != nil {
-		logrus.Errorf("service registration not successful: %w", err)
+		logrus.Errorf("service registration not successful: %v", err)
 		return err
 	}
 
@@ -150,7 +159,7 @@ func (s *serviceRegistry) RemoveWorkload(ctx context.Context, workloadLabels map
 	logrus.Infof("Sending workload remove request: %v", serviceWorkload)
 	_, err = s.registryClient.RemoveWorkload(ctx, serviceWorkload)
 	if err != nil {
-		logrus.Errorf("service removal not successful: %w", err)
+		logrus.Errorf("service removal not successful: %v", err)
 		return err
 	}
 
@@ -162,7 +171,9 @@ func (s *serviceRegistry) RemoveWorkload(ctx context.Context, workloadLabels map
 }
 
 func (s *serviceRegistry) Stop() {
-	s.connection.Close()
+	if err := s.connection.Close(); err != nil {
+		logrus.Warnf("closing connection error: %v", err)
+	}
 }
 
 func processPortsFromLabel(portLabel, separator string) ([]int32, error) {

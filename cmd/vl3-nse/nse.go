@@ -20,6 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/networkservicemesh/networkservicemesh/controlplane/api/networkservice"
@@ -50,8 +52,6 @@ type Flags struct {
 	ConfigPath string
 	Verify     bool
 }
-
-type fnGetNseName func() string
 
 // Process will parse the command line flags and init the structure members
 func (mf *Flags) Process() {
@@ -94,6 +94,7 @@ func main() {
 
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetReportCaller(true)
 
 	mainFlags := &Flags{}
 	mainFlags.Process()
@@ -123,37 +124,22 @@ func InitializeMetrics() {
 	metrics.ServeMetrics(addr, metricsPath)
 }
 
-/*
-var (
-	nsmEndpoint *endpoint.NsmEndpoint
-)
-
-func main() {
-
-	// Capture signals to cleanup before exiting
-	c := tools.NewOSSignalChannel()
-
-	composite := endpoint.NewCompositeEndpoint(
-		endpoint.NewMonitorEndpoint(nil),
-		endpoint.NewIpamEndpoint(nil),
-		newVL3ConnectComposite(nil),
-		endpoint.NewConnectionEndpoint(nil))
-
-	nsme, err := endpoint.NewNSMEndpoint(context.TODO(), nil, composite)
-	if err != nil {
-		logrus.Fatalf("%v", err)
-	}
-	nsmEndpoint = nsme
-	_ = nsmEndpoint.Start()
-	logrus.Infof("Started NSE --got name %s", nsmEndpoint.GetName())
-	defer func() { _ = nsmEndpoint.Delete() }()
-
-	// Capture signals to cleanup before exiting
-	<-c
+func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		EnvironmentOverrideColors: true,
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			const modulePath = "github.com/cisco-app-networking/nsm-nse"
+			call := strings.TrimPrefix(frame.Function, modulePath)
+			function = fmt.Sprintf("%s()", strings.TrimPrefix(call, "/"))
+			_, file = filepath.Split(frame.File)
+			file = fmt.Sprintf("%s:%d", file, frame.Line)
+			return
+		},
+	})
 }
 
-func GetMyNseName() string {
-	return nsmEndpoint.GetName()
+func newLogger() *logrus.Logger {
+	logger := logrus.New()
+	logger.SetReportCaller(logrus.StandardLogger().ReportCaller)
+	return logger
 }
-
-*/

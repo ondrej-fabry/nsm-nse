@@ -7,7 +7,7 @@ ENV PACKAGEPATH=github.com/networkservicemesh/networkservicemesh/
 ENV GO111MODULE=on
 
 RUN mkdir /root/networkservicemesh
-ADD ["go.mod","/root/networkservicemesh"]
+COPY go.mod /root/networkservicemesh
 WORKDIR /root/networkservicemesh/
 RUN go mod download
 
